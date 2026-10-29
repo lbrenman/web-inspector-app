@@ -1,0 +1,34 @@
+services:
+  app:
+    image: mcr.microsoft.com/devcontainers/javascript-node:24-bookworm
+    volumes:
+      - ../..:/workspaces:cached
+    command: sleep infinity
+    # Share the db container's network namespace so Postgres is reachable at
+    # localhost:5432, identical to local runs and CI.
+    network_mode: service:db
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:17
+    restart: unless-stopped
+    # Published to the host loopback only, so `docker compose up -d db` also works
+    # for local (non-Codespaces) development. Ignored inside Codespaces.
+    ports:
+      - '127.0.0.1:5432:5432'
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: app_dev
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d app_dev']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  postgres-data:

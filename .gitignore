@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+
+# Environment (keep the example)
+.env
+.env.*
+!.env.example
+
+# Build output
+dist/
+build/
+
+# Test / coverage
+coverage/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+*.swp
