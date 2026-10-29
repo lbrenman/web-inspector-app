@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { describeError, getPatternTable, listPatterns } from '../api/index.js';
+import { formatTime } from '../format.js';
+import Card from './Card.jsx';
 import DataTable from './DataTable.jsx';
 
 export default function PatternsView({ version, onOpenRequest }) {
@@ -45,50 +47,78 @@ export default function PatternsView({ version, onOpenRequest }) {
     };
   }, [selected, version]);
 
-  if (error) return <p role="alert">{error}</p>;
-  if (patterns === null) return <p>Loading…</p>;
+  if (error) {
+    return (
+      <div className="state">
+        <p role="alert">{error}</p>
+      </div>
+    );
+  }
+  if (patterns === null) {
+    return (
+      <div className="state">
+        <p>Loading…</p>
+      </div>
+    );
+  }
   if (patterns.length === 0) {
     return (
-      <p className="muted">
-        No patterns yet. A pattern appears when two or more JSON-object payloads share the same
-        top-level keys.
-      </p>
+      <div className="state">
+        <p>
+          No patterns yet. A pattern appears when two or more JSON-object payloads share the same
+          top-level keys.
+        </p>
+      </div>
     );
   }
 
+  const tableNotes =
+    table && table.id === selected ? (
+      <span className="muted small">
+        {table.totalRows} requests
+        {table.rows.length < table.totalRows && ` (showing the newest ${table.rows.length})`}
+        {table.columnsTruncated && ', columns truncated'}
+      </span>
+    ) : null;
+
   return (
     <div className="patterns">
-      <ul className="pattern-list">
-        {patterns.map((pattern) => (
-          <li key={pattern.id}>
-            <button
-              type="button"
-              className={pattern.id === selected ? 'item selected' : 'item'}
-              aria-current={pattern.id === selected ? 'true' : undefined}
-              onClick={() => setSelected(pattern.id)}
-            >
-              <span className="path">{pattern.keys.join(', ')}</span>
-              <span className="meta">
-                {pattern.count} requests · last {new Date(pattern.lastSeen).toLocaleTimeString()}
-              </span>
-            </button>
-          </li>
-        ))}
-      </ul>
+      <aside className="list-pane">
+        <ul>
+          {patterns.map((pattern) => (
+            <li key={pattern.id}>
+              <button
+                type="button"
+                className={pattern.id === selected ? 'item selected' : 'item'}
+                aria-current={pattern.id === selected ? 'true' : undefined}
+                onClick={() => setSelected(pattern.id)}
+              >
+                <span className="row1">
+                  <span className="path pattern-keys">{pattern.keys.join(', ')}</span>
+                </span>
+                <span className="row2">
+                  <span>{pattern.count} requests</span>
+                  <span>last {formatTime(pattern.lastSeen)}</span>
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      </aside>
 
-      <div className="pattern-table">
+      <div className="patterns-main">
         {tableError && <p role="alert">{tableError}</p>}
-        {!selected && <p className="muted">Select a pattern to view it as a table.</p>}
+        {!selected && (
+          <div className="state">
+            <p>Select a pattern to view it as a table.</p>
+          </div>
+        )}
         {selected && table && table.id === selected && (
-          <>
-            <p className="muted">
-              {table.totalRows} requests
-              {table.rows.length < table.totalRows && ` (showing the newest ${table.rows.length})`}
-              {table.columnsTruncated && ', columns truncated'}
-            </p>
+          <Card title="Pattern table" actions={tableNotes} className="fill" bodyClassName="fill">
             <DataTable
               columns={table.columns}
               rows={table.rows}
+              className="fill"
               leading={{
                 header: 'Request',
                 cell: (rowIndex) => {
@@ -106,7 +136,7 @@ export default function PatternsView({ version, onOpenRequest }) {
                 },
               }}
             />
-          </>
+          </Card>
         )}
       </div>
     </div>

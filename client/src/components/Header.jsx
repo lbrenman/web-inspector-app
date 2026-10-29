@@ -14,23 +14,24 @@ export default function Header({ info, connected, view, onViewChange, onClear })
   }
 
   return (
-    <header className="header">
-      <div className="title-row">
+    <header className="topbar">
+      <div className="brand">
         <h1>Request Inspector</h1>
         <span className={connected ? 'status live' : 'status offline'}>
+          <span className="dot" aria-hidden="true" />
           {connected ? 'Live' : 'Reconnecting…'}
         </span>
       </div>
 
-      <div className="capture-url">
-        <span>Send requests to:</span>
+      <div className="url-pill">
+        <span className="label">Send requests to</span>
         <code>{info ? info.captureUrl : '…'}</code>
         <button type="button" onClick={handleCopy} disabled={!info}>
           {copied ? 'Copied' : 'Copy'}
         </button>
       </div>
 
-      <nav className="toolbar">
+      <div className="topbar-actions">
         <div role="tablist" aria-label="View" className="tabs">
           <button
             type="button"
@@ -49,10 +50,10 @@ export default function Header({ info, connected, view, onViewChange, onClear })
             Patterns
           </button>
         </div>
-        <button type="button" onClick={onClear}>
+        <button type="button" className="danger" onClick={onClear}>
           Clear all
         </button>
-      </nav>
+      </div>
     </header>
   );
 }

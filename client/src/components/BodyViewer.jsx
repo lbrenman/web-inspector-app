@@ -1,5 +1,55 @@
 import { useState } from 'react';
+import Card from './Card.jsx';
 import DataTable from './DataTable.jsx';
+
+// Highlighting creates one element per token, so skip it for very large bodies.
+const MAX_HIGHLIGHT_LENGTH = 200_000;
+
+const TOKEN = /("(?:\\.|[^"\\])*")(\s*:)?|\b(?:true|false|null)\b|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?/g;
+
+function tokenClass(token) {
+  if (token === 'null') return 'tok-null';
+  if (token === 'true' || token === 'false') return 'tok-bool';
+  return 'tok-number';
+}
+
+function highlightJson(text) {
+  if (text.length > MAX_HIGHLIGHT_LENGTH) return text;
+
+  const nodes = [];
+  let last = 0;
+  let key = 0;
+
+  for (const match of text.matchAll(TOKEN)) {
+    const [token, string, colon] = match;
+    if (match.index > last) nodes.push(text.slice(last, match.index));
+
+    if (string === undefined) {
+      nodes.push(
+        <span key={key++} className={tokenClass(token)}>
+          {token}
+        </span>,
+      );
+    } else if (colon) {
+      nodes.push(
+        <span key={key++} className="tok-key">
+          {string}
+        </span>,
+        colon,
+      );
+    } else {
+      nodes.push(
+        <span key={key++} className="tok-string">
+          {string}
+        </span>,
+      );
+    }
+    last = match.index + token.length;
+  }
+
+  if (last < text.length) nodes.push(text.slice(last));
+  return nodes;
+}
 
 function prettyJson(text) {
   try {
@@ -22,35 +72,38 @@ export default function BodyViewer({ body, tables }) {
   ];
   const [selected, setSelected] = useState(body.isJson ? 'pretty' : 'raw');
   const active = tabs.some((tab) => tab.id === selected) ? selected : tabs[0].id;
+  const isEmpty = body.encoding === 'empty';
 
-  if (body.encoding === 'empty') {
-    return <p className="muted">No body.</p>;
-  }
+  const tabList = isEmpty ? null : (
+    <div role="tablist" aria-label="Body view" className="tabs">
+      {tabs.map((tab) => (
+        <button
+          key={tab.id}
+          type="button"
+          role="tab"
+          aria-selected={active === tab.id}
+          onClick={() => setSelected(tab.id)}
+        >
+          {tab.label}
+        </button>
+      ))}
+    </div>
+  );
 
   return (
-    <div>
-      <div role="tablist" aria-label="Body view" className="tabs">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            role="tab"
-            aria-selected={active === tab.id}
-            onClick={() => setSelected(tab.id)}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+    <Card title="Body" actions={tabList}>
+      {isEmpty && <p className="empty">No body.</p>}
 
       {body.encoding === 'base64' && active === 'raw' && (
         <>
-          <p className="muted">Binary body ({formatBytes(body.size)}), shown as base64.</p>
+          <p className="note">Binary body ({formatBytes(body.size)}), shown as base64.</p>
           <pre>{body.base64}</pre>
         </>
       )}
       {body.encoding === 'utf8' && active === 'raw' && <pre>{body.text}</pre>}
-      {body.encoding === 'utf8' && active === 'pretty' && <pre>{prettyJson(body.text)}</pre>}
+      {body.encoding === 'utf8' && active === 'pretty' && (
+        <pre aria-label="Pretty JSON">{highlightJson(prettyJson(body.text))}</pre>
+      )}
 
       {active === 'tables' &&
         tables.map((table) => (
@@ -63,9 +116,9 @@ export default function BodyViewer({ body, tables }) {
                 {table.columnsTruncated && ', columns truncated'}
               </span>
             </h4>
-            <DataTable columns={table.columns} rows={table.rows} />
+            <DataTable columns={table.columns} rows={table.rows} className="compact" />
           </section>
         ))}
-    </div>
+    </Card>
   );
 }

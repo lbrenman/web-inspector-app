@@ -1,7 +1,7 @@
 export default function KeyValueTable({ items, label }) {
   return (
-    <div className="table-scroll">
-      <table aria-label={label}>
+    <div className="table-wrap">
+      <table className="kv" aria-label={label}>
         <thead>
           <tr>
             <th scope="col">Name</th>

@@ -10,11 +10,31 @@ describe('BodyViewer', () => {
     const user = userEvent.setup();
     render(<BodyViewer body={jsonBody} tables={[]} />);
 
-    expect(screen.getByText(/"hello": "world"/)).toBeInTheDocument();
+    expect(screen.getByLabelText('Pretty JSON')).toHaveTextContent('"hello": "world"');
 
     await user.click(screen.getByRole('tab', { name: 'Raw' }));
 
     expect(screen.getByText('{"hello":"world"}')).toBeInTheDocument();
+  });
+
+  it('highlights JSON keys, strings, numbers, booleans and null without altering the text', () => {
+    const text = '{"name":"ann","age":30,"ok":true,"none":null,"note":"has 42 and true inside"}';
+    render(
+      <BodyViewer body={{ encoding: 'utf8', size: text.length, text, isJson: true }} tables={[]} />,
+    );
+
+    const pretty = screen.getByLabelText('Pretty JSON');
+    const classOf = (value) =>
+      [...pretty.querySelectorAll('span')].find((el) => el.textContent === value)?.className;
+
+    expect(classOf('"name"')).toBe('tok-key');
+    expect(classOf('"ann"')).toBe('tok-string');
+    expect(classOf('30')).toBe('tok-number');
+    expect(classOf('true')).toBe('tok-bool');
+    expect(classOf('null')).toBe('tok-null');
+    // Numbers and keywords inside strings stay part of the string token.
+    expect(classOf('"has 42 and true inside"')).toBe('tok-string');
+    expect(pretty.textContent).toBe(JSON.stringify(JSON.parse(text), null, 2));
   });
 
   it('shows plain text bodies as raw only', () => {
@@ -31,7 +51,7 @@ describe('BodyViewer', () => {
       <BodyViewer body={{ encoding: 'utf8', size: 5, text: '{"a":', isJson: true }} tables={[]} />,
     );
 
-    expect(screen.getByText('{"a":')).toBeInTheDocument();
+    expect(screen.getByLabelText('Pretty JSON')).toHaveTextContent('{"a":');
   });
 
   it('describes binary bodies and shows base64', () => {

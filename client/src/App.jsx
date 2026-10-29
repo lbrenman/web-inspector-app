@@ -56,32 +56,39 @@ export default function App() {
         onViewChange={setView}
         onClear={handleClear}
       />
-      {actionError && <p role="alert">{actionError}</p>}
-
-      {view === 'requests' && (
-        <main className="layout">
-          {stream.status === 'loading' && <p>Loading…</p>}
-          {stream.status === 'error' && <p role="alert">{stream.error}</p>}
-          {stream.status === 'ready' && (
-            <>
-              <RequestList
-                requests={stream.requests}
-                selectedId={selectedId}
-                onSelect={setSelectedId}
-                hasMore={stream.hasMore}
-                onLoadMore={stream.loadMore}
-              />
-              <RequestDetail id={selectedId} onDelete={handleDelete} />
-            </>
-          )}
-        </main>
+      {actionError && (
+        <p role="alert" className="banner">
+          {actionError}
+        </p>
       )}
 
-      {view === 'patterns' && (
-        <main>
+      <main className="view">
+        {view === 'requests' && stream.status === 'loading' && (
+          <div className="state">
+            <p>Loading…</p>
+          </div>
+        )}
+        {view === 'requests' && stream.status === 'error' && (
+          <div className="state">
+            <p role="alert">{stream.error}</p>
+          </div>
+        )}
+        {view === 'requests' && stream.status === 'ready' && (
+          <div className="workspace">
+            <RequestList
+              requests={stream.requests}
+              selectedId={selectedId}
+              onSelect={setSelectedId}
+              hasMore={stream.hasMore}
+              onLoadMore={stream.loadMore}
+            />
+            <RequestDetail id={selectedId} onDelete={handleDelete} />
+          </div>
+        )}
+        {view === 'patterns' && (
           <PatternsView version={stream.version} onOpenRequest={handleOpenRequest} />
-        </main>
-      )}
+        )}
+      </main>
     </div>
   );
 }

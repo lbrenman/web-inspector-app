@@ -47,7 +47,7 @@ describe('request list and detail', () => {
 
     const query = screen.getByRole('table', { name: 'Query parameters' });
     expect(within(query).getByText('postman')).toBeInTheDocument();
-    expect(screen.getByText(/"hello": "world"/)).toBeInTheDocument();
+    expect(screen.getByLabelText('Pretty JSON')).toHaveTextContent('"hello": "world"');
   });
 
   it('shows detected tables on a Tables tab', async () => {

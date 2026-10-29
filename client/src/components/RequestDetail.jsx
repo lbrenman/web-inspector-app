@@ -1,7 +1,17 @@
 import { useEffect, useState } from 'react';
 import { describeError, getRequest } from '../api/index.js';
+import { formatBytes } from '../format.js';
 import BodyViewer from './BodyViewer.jsx';
+import Card from './Card.jsx';
 import KeyValueTable from './KeyValueTable.jsx';
+
+function Message({ children }) {
+  return (
+    <section className="detail-pane">
+      <div className="state">{children}</div>
+    </section>
+  );
+}
 
 export default function RequestDetail({ id, onDelete }) {
   const [state, setState] = useState({ status: 'idle', data: null, error: null });
@@ -37,58 +47,57 @@ export default function RequestDetail({ id, onDelete }) {
   }
 
   if (id === null) {
-    return (
-      <section className="detail">
-        <p className="muted">Select a request to inspect it.</p>
-      </section>
-    );
+    return <Message>Select a request to inspect it.</Message>;
   }
   if (state.status === 'loading' || state.status === 'idle') {
-    return (
-      <section className="detail">
-        <p>Loading…</p>
-      </section>
-    );
+    return <Message>Loading…</Message>;
   }
   if (state.status === 'error') {
     return (
-      <section className="detail">
+      <Message>
         <p role="alert">{state.error}</p>
-      </section>
+      </Message>
     );
   }
 
   const { data } = state;
   return (
-    <section className="detail">
-      <h2>
-        <span className={`method method-${data.method.toLowerCase()}`}>{data.method}</span>{' '}
-        <span className="path">
-          {data.path}
-          {data.queryString ? `?${data.queryString}` : ''}
-        </span>
-      </h2>
-      <p className="muted">
-        Received {new Date(data.receivedAt).toLocaleString()} · HTTP/{data.httpVersion} · from{' '}
-        {data.remoteAddress ?? 'unknown'} · {data.body.size} B
-      </p>
-      <button type="button" onClick={handleDelete}>
-        Delete request
-      </button>
-      {deleteError && <p role="alert">{deleteError}</p>}
+    <section className="detail-pane">
+      <div className="detail-head">
+        <div className="detail-row">
+          <h2 className="detail-title">
+            <span className={`method method-${data.method.toLowerCase()}`}>{data.method}</span>
+            <span className="path">
+              {data.path}
+              {data.queryString ? `?${data.queryString}` : ''}
+            </span>
+          </h2>
+          <button type="button" className="danger" onClick={handleDelete}>
+            Delete request
+          </button>
+        </div>
+        <div className="chips">
+          <span className="chip">{new Date(data.receivedAt).toLocaleString()}</span>
+          <span className="chip">HTTP/{data.httpVersion}</span>
+          <span className="chip">from {data.remoteAddress ?? 'unknown'}</span>
+          <span className="chip">{formatBytes(data.body.size)}</span>
+        </div>
+        {deleteError && <p role="alert">{deleteError}</p>}
+      </div>
 
-      <h3>Headers</h3>
-      <KeyValueTable items={data.headers} label="Headers" />
+      <div className="detail-content">
+        <BodyViewer key={data.id} body={data.body} tables={data.tables} />
 
-      {data.query.length > 0 && (
-        <>
-          <h3>Query parameters</h3>
-          <KeyValueTable items={data.query} label="Query parameters" />
-        </>
-      )}
+        {data.query.length > 0 && (
+          <Card title="Query parameters" count={data.query.length}>
+            <KeyValueTable items={data.query} label="Query parameters" />
+          </Card>
+        )}
 
-      <h3>Body</h3>
-      <BodyViewer key={data.id} body={data.body} tables={data.tables} />
+        <Card title="Headers" count={data.headers.length}>
+          <KeyValueTable items={data.headers} label="Headers" />
+        </Card>
+      </div>
     </section>
   );
 }
