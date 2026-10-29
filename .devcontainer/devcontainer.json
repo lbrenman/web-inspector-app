@@ -4,10 +4,11 @@
   "service": "app",
   "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
   "shutdownAction": "stopCompose",
-  "forwardPorts": [5173, 3001],
+  "forwardPorts": [5173, 3001, 3002],
   "portsAttributes": {
-    "5173": { "label": "Client (Vite)", "onAutoForward": "notify" },
-    "3001": { "label": "API (Express)", "onAutoForward": "silent" }
+    "5173": { "label": "Inspector UI (keep Private)", "onAutoForward": "notify" },
+    "3001": { "label": "Capture /hook (Public if Postman must reach it)", "onAutoForward": "notify" },
+    "3002": { "label": "Inspector API (keep Private)", "onAutoForward": "silent" }
   },
   "postCreateCommand": "bash .devcontainer/post-create.sh",
   "customizations": {

@@ -27,6 +27,11 @@ function errorHandler(err, req, res, next) {
       .json({ error: { code: 'PAYLOAD_TOO_LARGE', message: 'Request body is too large' } });
   }
 
+  // Other client errors raised by Express/body-parser (unsupported encoding, aborted request, ...).
+  if (Number.isInteger(err?.status) && err.status >= 400 && err.status < 500 && err.expose) {
+    return res.status(err.status).json({ error: { code: 'BAD_REQUEST', message: err.message } });
+  }
+
   // Anything else is unexpected: log internally, never leak details to the client.
   logger.error(`Unhandled error on ${req.method} ${req.originalUrl}:`, err);
   return res

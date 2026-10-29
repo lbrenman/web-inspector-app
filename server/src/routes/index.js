@@ -1,10 +1,17 @@
 const express = require('express');
-const healthRoutes = require('./health');
-const notesRoutes = require('./notes');
+const healthController = require('../controllers/healthController');
+const infoController = require('../controllers/infoController');
+const streamController = require('../controllers/streamController');
+const patternsRoutes = require('./patterns');
+const requestsRoutes = require('./requests');
 
+// Inspector API routes (mounted under /api). Never mounted on the public capture app.
 const router = express.Router();
 
-router.use('/health', healthRoutes);
-router.use('/notes', notesRoutes);
+router.get('/health', healthController.check);
+router.get('/info', infoController.get);
+router.get('/stream', streamController.stream);
+router.use('/requests', requestsRoutes);
+router.use('/patterns', patternsRoutes);
 
 module.exports = router;

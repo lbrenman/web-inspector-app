@@ -1,58 +1,87 @@
 import { useEffect, useState } from 'react';
-import { createNote, deleteNote, describeError, listNotes } from './api/notesApi.js';
-import NoteForm from './components/NoteForm.jsx';
-import NoteList from './components/NoteList.jsx';
+import { describeError, getInfo } from './api/index.js';
+import Header from './components/Header.jsx';
+import PatternsView from './components/PatternsView.jsx';
+import RequestDetail from './components/RequestDetail.jsx';
+import RequestList from './components/RequestList.jsx';
+import { useRequestStream } from './hooks/useRequestStream.js';
 
 export default function App() {
-  const [notes, setNotes] = useState([]);
-  const [status, setStatus] = useState('loading'); // 'loading' | 'ready' | 'error'
-  const [loadError, setLoadError] = useState(null);
+  const stream = useRequestStream();
+  const [info, setInfo] = useState(null);
+  const [view, setView] = useState('requests');
+  const [selectedId, setSelectedId] = useState(null);
   const [actionError, setActionError] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
-
-    listNotes()
-      .then((data) => {
-        if (cancelled) return;
-        setNotes(data);
-        setStatus('ready');
+    getInfo()
+      .then((result) => {
+        if (!cancelled) setInfo(result);
       })
-      .catch((err) => {
-        if (cancelled) return;
-        setLoadError(describeError(err));
-        setStatus('error');
+      .catch(() => {
+        // The capture URL is a convenience; the rest of the UI works without it.
       });
-
     return () => {
       cancelled = true;
     };
   }, []);
 
-  // Errors are rethrown so NoteForm can show them next to the form.
-  async function handleCreate(note) {
-    const created = await createNote(note);
-    setNotes((prev) => [created, ...prev]);
-  }
-
-  async function handleDelete(id) {
+  async function handleClear() {
     setActionError(null);
     try {
-      await deleteNote(id);
-      setNotes((prev) => prev.filter((note) => note.id !== id));
+      await stream.clear();
+      setSelectedId(null);
     } catch (err) {
       setActionError(describeError(err));
     }
   }
 
+  async function handleDelete(id) {
+    await stream.remove(id);
+    setSelectedId((current) => (current === id ? null : current));
+  }
+
+  function handleOpenRequest(id) {
+    setSelectedId(id);
+    setView('requests');
+  }
+
   return (
-    <main>
-      <h1>Notes</h1>
-      <NoteForm onCreate={handleCreate} />
+    <div className="app">
+      <Header
+        info={info}
+        connected={stream.connected}
+        view={view}
+        onViewChange={setView}
+        onClear={handleClear}
+      />
       {actionError && <p role="alert">{actionError}</p>}
-      {status === 'loading' && <p>Loading…</p>}
-      {status === 'error' && <p role="alert">{loadError}</p>}
-      {status === 'ready' && <NoteList notes={notes} onDelete={handleDelete} />}
-    </main>
+
+      {view === 'requests' && (
+        <main className="layout">
+          {stream.status === 'loading' && <p>Loading…</p>}
+          {stream.status === 'error' && <p role="alert">{stream.error}</p>}
+          {stream.status === 'ready' && (
+            <>
+              <RequestList
+                requests={stream.requests}
+                selectedId={selectedId}
+                onSelect={setSelectedId}
+                hasMore={stream.hasMore}
+                onLoadMore={stream.loadMore}
+              />
+              <RequestDetail id={selectedId} onDelete={handleDelete} />
+            </>
+          )}
+        </main>
+      )}
+
+      {view === 'patterns' && (
+        <main>
+          <PatternsView version={stream.version} onOpenRequest={handleOpenRequest} />
+        </main>
+      )}
+    </div>
   );
 }

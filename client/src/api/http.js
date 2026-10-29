@@ -8,13 +8,10 @@ export class ApiError extends Error {
   }
 }
 
-async function request(path, options = {}) {
+export async function request(path, options = {}) {
   let response;
   try {
-    response = await fetch(`/api${path}`, {
-      headers: { 'Content-Type': 'application/json' },
-      ...options,
-    });
+    response = await fetch(`/api${path}`, options);
   } catch {
     throw new ApiError(0, 'NETWORK_ERROR', 'Could not reach the server');
   }
@@ -49,16 +46,4 @@ export function describeError(err) {
     return err.details.map((d) => `${d.path}: ${d.message}`).join('; ');
   }
   return err instanceof Error ? err.message : 'Something went wrong';
-}
-
-export function listNotes() {
-  return request('/notes');
-}
-
-export function createNote(note) {
-  return request('/notes', { method: 'POST', body: JSON.stringify(note) });
-}
-
-export function deleteNote(id) {
-  return request(`/notes/${id}`, { method: 'DELETE' });
 }
