@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { describeError, getInfo } from './api/index.js';
 import Header from './components/Header.jsx';
 import PatternsView from './components/PatternsView.jsx';
+import RepliesView from './components/RepliesView.jsx';
 import RequestDetail from './components/RequestDetail.jsx';
 import RequestList from './components/RequestList.jsx';
 import { useRequestStream } from './hooks/useRequestStream.js';
@@ -85,6 +86,7 @@ export default function App() {
             <RequestDetail id={selectedId} onDelete={handleDelete} />
           </div>
         )}
+        {view === 'replies' && <RepliesView />}
         {view === 'patterns' && (
           <PatternsView version={stream.version} onOpenRequest={handleOpenRequest} />
         )}

@@ -35,6 +35,7 @@ describe('GET /api/requests', () => {
       contentType: expect.stringMatching(/^text\/plain/),
       bodySize: 5,
       isJson: false,
+      responseStatus: 200,
     });
     expect(res.body.items[1]).toMatchObject({ method: 'POST', isJson: true });
   });

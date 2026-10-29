@@ -327,7 +327,8 @@ button.link:hover:not(:disabled) {
 
 /* ---------- Two-pane layout ---------- */
 .workspace,
-.patterns {
+.patterns,
+.replies {
   flex: 1;
   min-height: 0;
   display: grid;
@@ -412,10 +413,15 @@ button.link:hover:not(:disabled) {
   font-variant-numeric: tabular-nums;
 }
 
-.load-more {
+.load-more,
+.block-button {
   display: block;
   width: 100%;
   margin-top: 0.5rem;
+}
+
+.block-button {
+  margin: 0 0 0.5rem;
 }
 
 .method {
@@ -727,7 +733,8 @@ th.leading {
   }
 
   .workspace,
-  .patterns {
+  .patterns,
+  .replies {
     display: block;
   }
 
@@ -748,4 +755,222 @@ th.leading {
   .url-pill .label {
     display: none;
   }
+}
+
+/* ---------- Status codes ---------- */
+.code {
+  color: var(--c, var(--muted));
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.code.ok {
+  --c: var(--ok);
+}
+.code.redirect {
+  --c: var(--accent);
+}
+.code.client-error {
+  --c: var(--warn);
+}
+.code.server-error {
+  --c: var(--danger);
+}
+
+.item .row1 .code {
+  flex: none;
+  min-width: 3.5rem;
+  padding: 0.05rem 0.4rem;
+  border-radius: 0.35rem;
+  text-align: center;
+  background: color-mix(in srgb, var(--c, var(--muted)) 14%, transparent);
+}
+
+.chip.code {
+  font-size: 0.75rem;
+  border-color: color-mix(in srgb, var(--c, var(--muted)) 40%, var(--border));
+}
+
+/* ---------- Request / response columns ---------- */
+.column {
+  display: grid;
+  gap: 1rem;
+  align-content: start;
+  min-width: 0;
+}
+
+.section-label {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 650;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+@media (min-width: 80rem) {
+  .detail-content.both {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+}
+
+.reply-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  padding: 0.75rem 1rem;
+}
+
+.status-code {
+  color: var(--c, var(--muted));
+  font: 700 1.4rem/1 var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.status-code.ok {
+  --c: var(--ok);
+}
+.status-code.redirect {
+  --c: var(--accent);
+}
+.status-code.client-error {
+  --c: var(--warn);
+}
+.status-code.server-error {
+  --c: var(--danger);
+}
+
+.facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.25rem;
+  margin: 0 0 0 auto;
+}
+
+.facts div {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.facts dt {
+  color: var(--muted);
+}
+
+.facts dd {
+  margin: 0;
+}
+
+/* ---------- Form controls ---------- */
+input,
+textarea {
+  width: 100%;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--surface);
+  color: inherit;
+  font: inherit;
+}
+
+input:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+textarea {
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  resize: vertical;
+}
+
+button.primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
+:where(button.primary):hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 88%, black);
+}
+
+/* ---------- Replies ---------- */
+.replies-main {
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  padding: 1rem 1.25rem;
+}
+
+.form {
+  display: grid;
+  gap: 0.9rem;
+  padding: 1rem;
+}
+
+.form label {
+  display: grid;
+  gap: 0.25rem;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+fieldset {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+legend {
+  margin-bottom: 0.35rem;
+  padding: 0;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+fieldset > button {
+  justify-self: start;
+}
+
+.header-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) auto;
+  gap: 0.5rem;
+}
+
+.form-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.prose {
+  display: grid;
+  gap: 0.6rem;
+  padding: 1rem;
+  color: var(--muted);
+}
+
+.prose ul {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+.prose code {
+  color: var(--text);
+  font-size: 0.8rem;
 }

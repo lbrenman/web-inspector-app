@@ -49,6 +49,14 @@ export default function Header({ info, connected, view, onViewChange, onClear })
           >
             Patterns
           </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={view === 'replies'}
+            onClick={() => onViewChange('replies')}
+          >
+            Replies
+          </button>
         </div>
         <button type="button" className="danger" onClick={onClear}>
           Clear all

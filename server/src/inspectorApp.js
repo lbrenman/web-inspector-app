@@ -8,6 +8,7 @@ function createInspectorApp() {
   const app = express();
 
   app.disable('x-powered-by');
+  app.use(express.json({ limit: '256kb' }));
   app.use('/api', routes);
   app.use(notFound);
   app.use(errorHandler);

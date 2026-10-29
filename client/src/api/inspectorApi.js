@@ -31,3 +31,23 @@ export function listPatterns() {
 export function getPatternTable(hash) {
   return request(`/patterns/${hash}/table`);
 }
+
+function jsonRequest(method, data) {
+  return { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) };
+}
+
+export function listReplyRules() {
+  return request('/reply-rules');
+}
+
+export function createReplyRule(rule) {
+  return request('/reply-rules', jsonRequest('POST', rule));
+}
+
+export function updateReplyRule(id, rule) {
+  return request(`/reply-rules/${id}`, jsonRequest('PUT', rule));
+}
+
+export function deleteReplyRule(id) {
+  return request(`/reply-rules/${id}`, { method: 'DELETE' });
+}

@@ -75,6 +75,30 @@ export const summary = (overrides = {}) => ({
   contentType: 'application/json',
   bodySize: 17,
   isJson: true,
+  responseStatus: 200,
+  ...overrides,
+});
+
+export const reply = (overrides = {}) => ({
+  status: 200,
+  rule: null,
+  delayMs: 0,
+  headers: [
+    { name: 'Content-Type', value: 'application/json; charset=utf-8' },
+    { name: 'Content-Length', value: '25' },
+  ],
+  body: { encoding: 'utf8', size: 25, text: '{"received":true,"id":1}', isJson: true },
+  ...overrides,
+});
+
+export const replyRule = (overrides = {}) => ({
+  id: 1,
+  name: 'Splunk HEC',
+  pathPattern: '/hook/services/collector*',
+  status: 200,
+  headers: [{ name: 'Content-Type', value: 'application/json; charset=UTF-8' }],
+  body: '{"text":"Success","code":0}',
+  delayMs: 0,
   ...overrides,
 });
 
@@ -93,5 +117,6 @@ export const detail = (overrides = {}) => ({
   query: [{ name: 'source', value: 'postman' }],
   body: { encoding: 'utf8', size: 17, text: '{"hello":"world"}', isJson: true },
   tables: [],
+  response: reply(),
   ...overrides,
 });

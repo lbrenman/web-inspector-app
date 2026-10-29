@@ -3,21 +3,34 @@ const { pool } = require('./pool');
 // Constant column lists (never user input), so interpolating them into SQL is safe.
 const SUMMARY_COLUMNS = `id, received_at AS "receivedAt", method, path,
   query_string AS "queryString", content_type AS "contentType", body_size AS "bodySize",
-  (body_json IS NOT NULL) AS "isJson"`;
+  (body_json IS NOT NULL) AS "isJson", response_status AS "responseStatus"`;
 
 const DETAIL_COLUMNS = `id, received_at AS "receivedAt", method, path,
   query_string AS "queryString", headers, remote_address AS "remoteAddress",
   http_version AS "httpVersion", content_type AS "contentType", body_raw AS "bodyRaw",
-  body_size AS "bodySize"`;
+  body_size AS "bodySize", response_status AS "responseStatus",
+  response_headers AS "responseHeaders", response_body AS "responseBody",
+  response_rule AS "responseRule", response_delay_ms AS "responseDelayMs"`;
+
+/** Reserves the id for the next request, so the reply (which may reference it) can be built first. */
+async function nextId() {
+  const { rows } = await pool.query(
+    "SELECT nextval(pg_get_serial_sequence('requests', 'id'))::int AS id",
+  );
+  return rows[0].id;
+}
 
 async function insert(row) {
   const { rows } = await pool.query(
     `INSERT INTO requests
-       (method, path, query_string, headers, remote_address, http_version, content_type,
-        body_raw, body_size, body_json, shape_hash, shape_keys)
-     VALUES ($1, $2, $3, $4::jsonb, $5, $6, $7, $8, $9, $10::jsonb, $11, $12)
+       (id, method, path, query_string, headers, remote_address, http_version, content_type,
+        body_raw, body_size, body_json, shape_hash, shape_keys,
+        response_status, response_headers, response_body, response_rule, response_delay_ms)
+     VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, $8, $9, $10, $11::jsonb, $12, $13,
+             $14, $15::jsonb, $16, $17, $18)
      RETURNING ${SUMMARY_COLUMNS}`,
     [
+      row.id,
       row.method,
       row.path,
       row.queryString,
@@ -30,6 +43,11 @@ async function insert(row) {
       row.bodyJson,
       row.shapeHash,
       row.shapeKeys,
+      row.responseStatus,
+      row.responseHeaders,
+      row.responseBody,
+      row.responseRule,
+      row.responseDelayMs,
     ],
   );
   return rows[0];
@@ -103,6 +121,7 @@ async function findByShape(shapeHash, limit) {
 }
 
 module.exports = {
+  nextId,
   insert,
   trimToLimit,
   list,

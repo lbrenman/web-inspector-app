@@ -2,6 +2,7 @@ const HttpError = require('../errors/HttpError');
 const requestsRepository = require('../db/requestsRepository');
 const requestEvents = require('../events/requestEvents');
 const { analyzeBody } = require('../lib/body');
+const { findHeader } = require('../lib/headers');
 const { findTables } = require('../lib/tables');
 
 function notFound() {
@@ -13,6 +14,25 @@ async function listRequests({ limit, before }) {
   const rows = await requestsRepository.list({ limit: limit + 1, before: before ?? null });
   const hasMore = rows.length > limit;
   return { items: hasMore ? rows.slice(0, limit) : rows, hasMore };
+}
+
+/** The reply that was sent, or null for requests captured before replies were recorded. */
+function toResponse(row) {
+  if (row.responseStatus === null) return null;
+
+  const pairs = row.responseHeaders ?? [];
+  const { encoding, size, text, base64, isJson } = analyzeBody(
+    Buffer.from(row.responseBody ?? '', 'utf8'),
+    findHeader(pairs, 'content-type') ?? null,
+  );
+
+  return {
+    status: row.responseStatus,
+    rule: row.responseRule,
+    delayMs: row.responseDelayMs ?? 0,
+    headers: pairs.map(([name, headerValue]) => ({ name, value: headerValue })),
+    body: { encoding, size, text, base64, isJson },
+  };
 }
 
 function toDetail(row) {
@@ -33,6 +53,7 @@ function toDetail(row) {
     })),
     body,
     tables: body.isJson ? findTables(value) : [],
+    response: toResponse(row),
   };
 }
 

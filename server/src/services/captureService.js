@@ -1,5 +1,6 @@
 const config = require('../config');
 const requestsRepository = require('../db/requestsRepository');
+const replyRulesService = require('./replyRulesService');
 const requestEvents = require('../events/requestEvents');
 const { analyzeBody } = require('../lib/body');
 const { findHeader, pairHeaders } = require('../lib/headers');
@@ -32,7 +33,10 @@ function toJsonbParams(analysis) {
   }
 }
 
-/** Persists one captured HTTP request and notifies live subscribers. */
+/**
+ * Persists one captured HTTP request together with the reply that will be sent for it, and
+ * notifies live subscribers. Returns { summary, reply }; the caller sends the reply.
+ */
 async function record({ method, path, originalUrl, rawHeaders, httpVersion, remoteAddress, body }) {
   const headers = pairHeaders(rawHeaders);
   const contentType = findHeader(headers, 'content-type') ?? null;
@@ -40,7 +44,12 @@ async function record({ method, path, originalUrl, rawHeaders, httpVersion, remo
 
   const queryStart = originalUrl.indexOf('?');
 
+  // The id is reserved up front so the reply can reference it ({{id}}).
+  const id = await requestsRepository.nextId();
+  const reply = await replyRulesService.resolveReply(path, { id });
+
   const summary = await insertWithFallback({
+    id,
     method,
     path,
     queryString: queryStart === -1 ? '' : originalUrl.slice(queryStart + 1),
@@ -53,11 +62,16 @@ async function record({ method, path, originalUrl, rawHeaders, httpVersion, remo
     bodyJson,
     shapeHash: shape?.hash ?? null,
     shapeKeys: shape?.keys ?? null,
+    responseStatus: reply.status,
+    responseHeaders: JSON.stringify(reply.headers),
+    responseBody: reply.body,
+    responseRule: reply.ruleName,
+    responseDelayMs: reply.delayMs,
   });
 
   await requestsRepository.trimToLimit(config.maxStoredRequests);
   requestEvents.publish('request', summary);
-  return summary;
+  return { summary, reply };
 }
 
 module.exports = { record };

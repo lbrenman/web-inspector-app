@@ -1,9 +1,12 @@
 # Request Inspector
 
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/lbrenman/web-inspector-app)
+
 A small webhook.site-style tool. Send any HTTP request to `/hook` (from Postman, curl, a webhook
 provider, ...) and the inspector shows every detail of each call live: method, path, query
-parameters, all headers, and the body. When the payloads contain structure, you can view them as
-tables:
+parameters, all headers, and the body, together with the reply that was sent back. You can
+optionally control that reply (status, headers, body, delay) per path. When the payloads contain
+structure, you can view them as tables:
 
 - **Inside one payload:** arrays of objects (e.g. `{ "data": { "users": [ ... ] } }`) become tables.
 - **Across requests:** JSON-object payloads that share the same top-level keys are grouped into a
@@ -67,12 +70,42 @@ curl -X POST "$CAPTURE_URL?source=curl" \
 ```
 
 - Any method and any content type are accepted, on `/hook` and any sub-path (`/hook/orders/42`).
-- The response is `200 {"received": true, "id": <number>}`.
+- The default reply is `200 {"received": true, "id": <number>}`. See [Replies](#replies) to change it.
 - Bodies over `MAX_BODY_BYTES` are rejected with `413` and not stored.
 - JSON is detected from the content, not just the header, so a JSON body sent as `text/plain` still
   gets pretty-printing and tables. Malformed JSON is stored as plain text.
 - Gzip/deflate request bodies are decompressed by Express before storing. Other
   `Content-Encoding` values (for example `br`) are rejected with 415.
+
+## Replies
+
+Each captured request stores the exact reply that was sent, and the detail view shows it next to the
+request (use the Request / Response / Both switch). Replies are optional to configure: with no
+matching rule the default reply is used.
+
+Rules live on the **Replies** tab. A rule has a path pattern, a status (200 to 599), headers, a body
+and an optional delay (up to 10 seconds).
+
+- **Patterns:** an exact path (`/hook/orders/42`), a prefix ending in `*` (`/hook/orders*`), or `*`
+  for everything. Matching ignores case and one trailing slash.
+- **Most specific wins:** exact, then the longest prefix, then `*`. There is no ordering to manage.
+  Each pattern can only be used once.
+- **Placeholders:** `{{id}}` (the request id) and `{{timestamp}}` (ISO time) work in the body and
+  in header values.
+- **Added for you:** `Content-Length` always, and `Content-Type` when you do not set one
+  (`application/json` if the body parses as JSON, otherwise `text/plain`). For 204, 205 and 304 no
+  body is sent. `Content-Length`, `Transfer-Encoding`, `Connection` and similar framing headers
+  cannot be set.
+- **Delay:** holds only the caller's connection. The request appears in the inspector immediately.
+
+One rule is seeded: **Splunk HEC** (`/hook/services/collector*` replies
+`200 {"text":"Success","code":0}`, which Splunk HTTP Event Collector senders expect). Edit or delete
+it like any other rule.
+
+Requests captured before replies were recorded show "No reply was recorded".
+
+If you made the port Public, remember a delay keeps a connection open for that long, so outside
+callers can hold connections for up to 10 seconds per request.
 
 ## How table detection works
 
@@ -123,7 +156,7 @@ Copy `.env.example` to `.env`. The server validates its configuration at startup
 client/
   src/api/            fetch wrapper and inspector API functions
   src/hooks/          useRequestStream: list + live updates over SSE
-  src/components/     Header, RequestList, RequestDetail, BodyViewer, PatternsView, DataTable
+  src/components/     Header, RequestList, RequestDetail, BodyViewer, PatternsView, RepliesView, DataTable
 server/
   migrations/         node-pg-migrate migrations
   src/
@@ -133,7 +166,8 @@ server/
     controllers/      HTTP in/out
     services/         Capture, requests, patterns logic
     db/               Pool and data access (SQL lives only here)
-    lib/              Pure functions: body analysis, headers, shape hashing, table detection
+    lib/              Pure functions: body analysis, headers, shape hashing, table detection,
+                      reply rule matching and rendering
     events/           In-process pub/sub feeding the SSE stream
     middleware/       validate, notFound, errorHandler
     schemas/          zod request schemas
@@ -146,11 +180,15 @@ server/
 | ---------------------------------- | -------------------------------------------------------- |
 | `GET /api/info`                    | Capture URL and limits                                   |
 | `GET /api/requests?limit=&before=` | Summaries, newest first, cursor-paginated by id          |
-| `GET /api/requests/:id`            | Full request: headers, query, body, detected tables      |
+| `GET /api/requests/:id`            | Full request: headers, query, body, tables, reply sent   |
 | `DELETE /api/requests/:id`         | Delete one request                                       |
 | `DELETE /api/requests`             | Delete all requests                                      |
 | `GET /api/patterns`                | Groups of similarly shaped JSON payloads                 |
 | `GET /api/patterns/:hash/table`    | One pattern as a table                                   |
+| `GET /api/reply-rules`             | List reply rules                                         |
+| `POST /api/reply-rules`            | Create a rule `{ name, pathPattern, status, headers, body, delayMs }` |
+| `PUT /api/reply-rules/:id`         | Replace a rule (409 if the pattern is taken)             |
+| `DELETE /api/reply-rules/:id`      | Delete a rule                                            |
 | `GET /api/stream`                  | Server-Sent Events: `request`, `deleted`, `cleared`      |
 | `GET /api/health`                  | Liveness plus a database check                           |
 
@@ -171,5 +209,6 @@ serially because they share the database.
 
 - Live updates use an in-process event emitter, so the capture and API servers must run in the same
   process (they do). Running them separately would need Postgres `LISTEN/NOTIFY`.
-- Every captured request is stored as received. There is no per-endpoint URL or response
-  customization; `/hook` always answers `200`.
+- Every captured request is stored as received. There is a single `/hook` URL; replies are chosen
+  by path pattern (not by method, header or body content).
+- Reply bodies are text. Binary replies are not supported.

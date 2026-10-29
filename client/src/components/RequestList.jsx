@@ -1,4 +1,4 @@
-import { formatBytes, formatTime } from '../format.js';
+import { formatBytes, formatTime, statusClass } from '../format.js';
 
 export default function RequestList({ requests, selectedId, onSelect, hasMore, onLoadMore }) {
   if (requests.length === 0) {
@@ -35,6 +35,14 @@ export default function RequestList({ requests, selectedId, onSelect, hasMore, o
                   <span>{formatTime(request.receivedAt)}</span>
                   <span>{formatBytes(request.bodySize)}</span>
                   {request.isJson && <span className="badge">JSON</span>}
+                  {request.responseStatus != null && (
+                    <span
+                      className={`code ${statusClass(request.responseStatus)}`}
+                      title="Status of the reply sent"
+                    >
+                      {request.responseStatus}
+                    </span>
+                  )}
                 </span>
               </button>
             </li>

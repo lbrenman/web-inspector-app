@@ -63,7 +63,7 @@ function formatBytes(size) {
   return size === 1 ? '1 byte' : `${size} bytes`;
 }
 
-export default function BodyViewer({ body, tables }) {
+export default function BodyViewer({ body, tables, title = 'Body' }) {
   const hasTables = tables.length > 0;
   const tabs = [
     ...(body.isJson ? [{ id: 'pretty', label: 'Pretty' }] : []),
@@ -91,7 +91,7 @@ export default function BodyViewer({ body, tables }) {
   );
 
   return (
-    <Card title="Body" actions={tabList}>
+    <Card title={title} actions={tabList}>
       {isEmpty && <p className="empty">No body.</p>}
 
       {body.encoding === 'base64' && active === 'raw' && (
@@ -102,7 +102,7 @@ export default function BodyViewer({ body, tables }) {
       )}
       {body.encoding === 'utf8' && active === 'raw' && <pre>{body.text}</pre>}
       {body.encoding === 'utf8' && active === 'pretty' && (
-        <pre aria-label="Pretty JSON">{highlightJson(prettyJson(body.text))}</pre>
+        <pre aria-label={`${title} (pretty JSON)`}>{highlightJson(prettyJson(body.text))}</pre>
       )}
 
       {active === 'tables' &&

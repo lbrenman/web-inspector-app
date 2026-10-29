@@ -10,7 +10,7 @@ describe('BodyViewer', () => {
     const user = userEvent.setup();
     render(<BodyViewer body={jsonBody} tables={[]} />);
 
-    expect(screen.getByLabelText('Pretty JSON')).toHaveTextContent('"hello": "world"');
+    expect(screen.getByLabelText('Body (pretty JSON)')).toHaveTextContent('"hello": "world"');
 
     await user.click(screen.getByRole('tab', { name: 'Raw' }));
 
@@ -23,7 +23,7 @@ describe('BodyViewer', () => {
       <BodyViewer body={{ encoding: 'utf8', size: text.length, text, isJson: true }} tables={[]} />,
     );
 
-    const pretty = screen.getByLabelText('Pretty JSON');
+    const pretty = screen.getByLabelText('Body (pretty JSON)');
     const classOf = (value) =>
       [...pretty.querySelectorAll('span')].find((el) => el.textContent === value)?.className;
 
@@ -51,7 +51,7 @@ describe('BodyViewer', () => {
       <BodyViewer body={{ encoding: 'utf8', size: 5, text: '{"a":', isJson: true }} tables={[]} />,
     );
 
-    expect(screen.getByLabelText('Pretty JSON')).toHaveTextContent('{"a":');
+    expect(screen.getByLabelText('Body (pretty JSON)')).toHaveTextContent('{"a":');
   });
 
   it('describes binary bodies and shows base64', () => {
